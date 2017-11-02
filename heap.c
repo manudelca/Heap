@@ -1,6 +1,8 @@
 #include "heap.h"
 #include <stdin.h>
 #define TAM_INI 40
+#define TAM_DIV 4
+#define TAM_REDIM  2
 
 struct heap{
   void** arreglo;
@@ -53,6 +55,40 @@ void upheap(heap_t* heap,size_t posicion){
   return;
 }
 
+// Crea un heap en O(n log n). Se utiliza en heap_sort y crear_heap_arr.
+// Pre: El heap fue creado.
+
+void heapify(heap_t* heap, size_t n,  cmp_func_t comparar); 
+
+void heapify(heap_t* heap, size_t n, cmp_func_t comparar){
+  for (size_t i = n ; i > 0; i--){
+    downheap(heap, i, comparar);
+  }
+  downheap(heap, 0, comparar);
+}
+
+// Se utiliza para heap_desencolar.
+// Cumple que para borrar un elemento intercambia el ultimo elemento con la raiz del heap,
+// eliminando la anterior raiz, va comparando su posicion respecto a la de sus hijo para 
+// ubicarse en el lugar correcto.
+// Pre: Se ha creado el heap.
+// Pos: Ha borrado el elemento en la posicion correcta del heap. 
+
+void downheap(heap_t* heap, size_t pos, cmp_func_t comparar){
+  size_t hi = encontrar_hizq(pos);
+  size_t hd = encontrar_hder(pos);
+  size_t pmax;
+  if (hd > heap->cantidad ) return;
+  if (hd == heap->cantidad) pmax = hi;
+  else if (comparar(heap->arreglo[hi],heap->arreglo[hd]) > 0) pmax = hi;
+  else pmax = hd;
+
+  if (comparar(heap->arreglo[pos],heap->arreglo[pmax]) < 0){
+    swap(heap,pos,pmax);
+    downheap(heap, pmax, cmp);
+  }
+}
+
 
 heap_t* heap_crear(cmp_func_t cmp){
   if(!cmp)
@@ -95,7 +131,34 @@ bool heap_encolar(heap_t *heap, void *elem){
   heap->cantidad++;
   return true;
 }
+void *heap_desencolar(heap_t *heap){
+  if (heap_esta_vacio(heap)) return NULL;
+	if (heap->cantidad/TAM_DIV == heap->capacidad-1){
+		 if (!redimensionar(heap,(heap->capacidad)/TAM_REDIM));
+	}
+	void* elemento = heap->arreglo[0];
+  heap->datos[0] = heap->arreglo[heap->cantidad-1];
+  heap->cantidad--;
+  downheap(heap, 0, heap->comparar);
+  return elemento;
+}
 
 void* heap_ver_max(const heap_t* heap){
   return heap->arreglo[0] ? heap->arreglo[0] : NULL;
+}
+
+void heap_sort(void *elementos[], size_t cant, cmp_func_t comparar){
+  heap_t* heap = heap_crear(comparar);
+  free(heap->arreglo);
+  heap->arreglo = elementos;
+  heap->capacidad = heap->cantidad = cant;
+  heapify(heap, cant, comparar); 
+  cant--;
+  while (cant > 0){
+    swap(heap,0,cant);
+    cant--;
+    heap->cantidad--; 
+    downheap(heap, 0 ,comparar);
+  }
+  free(heap); 
 }
