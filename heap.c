@@ -107,6 +107,27 @@ heap_t* heap_crear(cmp_func_t cmp){
   return heap;
 }
 
+heap_t *heap_crear_arr(void *arr[], size_t n, cmp_func_t comparar){
+  if (!comparar) return NULL;
+
+  heap_t* heap = malloc(sizeof(heap_t));
+  if (!heap) return NULL;
+
+  heap->arreglo = malloc(sizeof(void*)*n);
+
+  if (heap->arreglo == NULL){
+    free(heap);
+    return NULL;
+  }
+  for (int pos = 0; pos < n; pos ++){
+    heap->arreglo[pos] = arr[pos];
+  }
+  heap->comparar = comparar;
+  heap->capacidad = heap->cantidad = n;
+  heapify(heap, n ,comparar);
+  return heap;
+}
+
 void heap_destruir(heap_t* heap, void destruir_elemento(void* e)){
   for(size_t i=0; i<cantidad && destruir_elemento; i++){
     actual=heap->arreglo[i];
@@ -117,9 +138,6 @@ void heap_destruir(heap_t* heap, void destruir_elemento(void* e)){
   return;
 }
 
-bool heap_esta_vacio(const heap_t* heap){
-  return heap->cantidad==0;
-}
 
 bool heap_encolar(heap_t *heap, void *elem){
   if(heap->cantidad==heap->capacidad){
@@ -142,9 +160,15 @@ void *heap_desencolar(heap_t *heap){
   downheap(heap, 0, heap->comparar);
   return elemento;
 }
+bool heap_esta_vacio(const heap_t* heap){
+  return heap->cantidad==0;
+}
 
 void* heap_ver_max(const heap_t* heap){
   return heap->arreglo[0] ? heap->arreglo[0] : NULL;
+}
+size_t heap_cantidad(const heap_t *heap){
+	return heap->cantidad;
 }
 
 void heap_sort(void *elementos[], size_t cant, cmp_func_t comparar){
