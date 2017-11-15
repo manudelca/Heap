@@ -45,13 +45,13 @@ bool redimensionar(heap_t* heap, size_t tam_nuevo){
   return true;
 }
 
-void upheap(heap_t* heap,size_t posicion){
+void upheap(void** arreglo,size_t posicion, cmp_func_t cmp){
   if(posicion==0)
     return;
-  size_t pos_padre=encontrar_padre(posicion);
-  if(heap->comparar(heap->arreglo[posicion],heap->arreglo[pos_padre]) > 0){
-    swap(heap,posicion,pos_padre);
-    upheap(heap,pos_padre);
+  size_t pos_padre = encontrar_padre(posicion);
+  if (cmp(arreglo[posicion],arreglo[pos_padre]) > 0){
+    swap(arreglo,posicion,pos_padre);
+    upheap(arreglo,pos_padre,cmp);
   }
   return;
 }
@@ -61,28 +61,30 @@ void upheap(heap_t* heap,size_t posicion){
 // ubicarse en el lugar correcto.
 // Pre: Se ha creado el heap.
 // Pos: Ha borrado el elemento en la posicion correcta del heap.
-void downheap(heap_t* heap, size_t pos, cmp_func_t comparar){
-  size_t hi = encontrar_hizq(pos);
-  size_t hd = encontrar_hder(pos);
-  size_t pmax;
-  if (hd > heap->cantidad ) return;
-  if (hd == heap->cantidad) pmax = hi;
-  else if (comparar(heap->arreglo[hi],heap->arreglo[hd]) > 0) pmax = hi;
-  else pmax = hd;
-
-  if (comparar(heap->arreglo[pos],heap->arreglo[pmax]) < 0){
-    swap(heap,pos,pmax);
-    downheap(heap, pmax, comparar);
+void downheap(void** arreglo,size_t largo,size_t posicion, cmp_func_t cmp){
+  if(posicion >= largo) return;
+  size_t hi = encontrar_hizq(posicion);
+  size_t hd = encontrar_hder(posicion);
+  size_t pos_max = posicion;
+  if(hi<largo && arreglo[pos_max]<arreglo[hi])
+    pos_max = hi;
+  if(hd<largo && arreglo[pos_max]<arreglo[hd])
+    pos_max = hd;
+  if(pos_max != posicion){
+    swap(arreglo,posicion,pos_max);
+    downheap(arreglo,largo,pos_max,cmp);
   }
+
+
 }
 
 // Crea un heap en O(n log n). Se utiliza en heap_sort y crear_heap_arr.
 // Pre: El heap fue creado.
-void heapify(heap_t* heap, size_t n, cmp_func_t comparar){
+void heapify(void**arreglo, size_t n, cmp_func_t cmp){
   for (size_t i = n ; i > 0; i--){
-    downheap(heap, i, comparar);
+    downheap(arreglo,n, i, cmp);
   }
-  downheap(heap, 0, comparar);
+  downheap(arreglo, n,0, cmp);
 }
 
 heap_t* heap_crear(cmp_func_t cmp){
@@ -120,7 +122,7 @@ heap_t *heap_crear_arr(void *arr[], size_t n, cmp_func_t comparar){
   }
   heap->comparar = comparar;
   heap->capacidad = heap->cantidad = n;
-  heapify(heap, n ,comparar);
+  heapify(heap->arreglo, n ,comparar);
   return heap;
 }
 
@@ -142,7 +144,7 @@ bool heap_encolar(heap_t *heap, void *elem){
       return false;
   }
   heap->arreglo[heap->cantidad]=elem;
-  upheap(heap,heap->cantidad);
+  upheap(heap->arreglo,heap->cantidad,heap->comparar);
   heap->cantidad++;
   return true;
 }
@@ -154,8 +156,8 @@ void *heap_desencolar(heap_t *heap){
 	void* elemento = heap->arreglo[0];
   heap->arreglo[0] = heap->arreglo[heap->cantidad-1];
   heap->cantidad--;
-  downheap(heap, 0, heap->comparar);
-  return elemento;
+ downheap( heap->arreglo,heap_cantidad(heap),0, heap->comparar );
+ return elemento;
 }
 bool heap_esta_vacio(const heap_t* heap){
   return heap->cantidad==0;
@@ -168,18 +170,16 @@ size_t heap_cantidad(const heap_t *heap){
 	return heap->cantidad;
 }
 
-void heap_sort(void *elementos[], size_t cant, cmp_func_t comparar){
-  heap_t* heap = heap_crear(comparar);
-  free(heap->arreglo);
-  heap->arreglo = elementos;
-  heap->capacidad = heap->cantidad = cant;
-  heapify(heap, cant, comparar);
-  cant--;
-  while (cant > 0){
-    swap(heap,0,cant);
-    cant--;
-    heap->cantidad--;
-    downheap(heap, 0 ,comparar);
+oid heap_sort(void *elementos[], size_t largo, cmp_func_t cmp){
+  heapify( elementos, largo, cmp );
+  //printf("heap sort wii\n");
+  size_t final = largo - 1;
+  while( final > 0 ){
+    swap(elementos,0, final);
+    final--;
+    downheap(elementos, final, 0, cmp);
   }
-  free(heap);
 }
+
+
+
